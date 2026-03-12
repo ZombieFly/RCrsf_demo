@@ -1,0 +1,36 @@
+# User-level wrapper Makefile
+# Keep the auto-generated Makefile untouched.
+# Build with: make -f Makefile.user
+
+# 1) Load the auto-generated project file first
+include Makefile
+
+# 2) Load user extension list (optional)
+USER_RESOURCE_FILE ?= user_sources.mk
+-include $(USER_RESOURCE_FILE)
+
+# 3) Append user resources
+C_SOURCES += $(USER_C_SOURCES)
+ASM_SOURCES += $(USER_ASM_SOURCES)
+ASMM_SOURCES += $(USER_ASMM_SOURCES)
+
+C_INCLUDES += $(addprefix -I,$(USER_INCLUDE_DIRS))
+C_DEFS += $(addprefix -D,$(USER_DEFS))
+
+# 4) Refresh vpath with appended sources
+vpath %.c $(sort $(dir $(C_SOURCES)))
+vpath %.s $(sort $(dir $(ASM_SOURCES)))
+vpath %.S $(sort $(dir $(ASMM_SOURCES)))
+
+# 5) Extend ELF prerequisites with appended OBJECTS (keep original recipe)
+$(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile.user
+
+# 6) Convenience target to inspect effective user additions
+.PHONY: user-show
+user-show:
+	@echo "USER_RESOURCE_FILE=$(USER_RESOURCE_FILE)"
+	@echo "USER_C_SOURCES=$(USER_C_SOURCES)"
+	@echo "USER_ASM_SOURCES=$(USER_ASM_SOURCES)"
+	@echo "USER_ASMM_SOURCES=$(USER_ASMM_SOURCES)"
+	@echo "USER_INCLUDE_DIRS=$(USER_INCLUDE_DIRS)"
+	@echo "USER_DEFS=$(USER_DEFS)"
