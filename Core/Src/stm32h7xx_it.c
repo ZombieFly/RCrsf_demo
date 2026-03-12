@@ -243,5 +243,20 @@ void UART7_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
+{
+    if (huart->Instance == CRSF_UART.Instance)
+    {
+        crsf_rx_idle_callback(size);
+    }
+}
 
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == CRSF_UART.Instance)
+    {
+        __HAL_UNLOCK(&CRSF_UART);
+        crsf_init();
+    }
+}
 /* USER CODE END 1 */

@@ -95,7 +95,7 @@ int main(void)
   MX_DMA_Init();
   MX_UART7_Init();
   /* USER CODE BEGIN 2 */
-
+  crsf_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
