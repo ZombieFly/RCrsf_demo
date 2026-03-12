@@ -6,6 +6,7 @@ packDir: null
 srcDirs:
   - Core
   - Drivers
+  - Libs
 virtualFolder:
   name: <virtual_root>
   files:
@@ -21,12 +22,14 @@ targets:
       defineList:
         - USE_HAL_DRIVER
         - STM32H723xx
+        - USE_PWR_LDO_SUPPLY
       incList:
         - Core/Inc
         - Drivers/STM32H7xx_HAL_Driver/Inc
         - Drivers/STM32H7xx_HAL_Driver/Inc/Legacy
         - Drivers/CMSIS/Device/ST/STM32H7xx/Include
         - Drivers/CMSIS/Include
+        - Libs/rcrsf
       libList: []
     excludeList: []
     toolchain: GCC
@@ -57,11 +60,10 @@ targets:
             $outputTaskExcludes:
               - .bin
             $toolName: auto
-            LD_FLAGS: -Wl,--no-warn-rwx-segments
             LIB_FLAGS: -lm
             output-format: elf
             remove-unused-input-sections: true
-        scatterFilePath: STM32H723VGTx_FLASH.ld
+        scatterFilePath: STM32H723XG_FLASH.ld
         storageLayout:
           RAM: []
           ROM: []
