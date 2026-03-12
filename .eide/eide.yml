@@ -71,9 +71,9 @@ targets:
         baseAddr: ""
         bin: ""
         cpuInfo:
-          cpuName: "null"
-          vendor: "null"
+          cpuName: STM32H723VG
+          vendor: ST
         otherCmds: ""
         proType: 1
-        speed: 8000
+        speed: 50000
     uploader: JLink
