@@ -1,0 +1,59 @@
+name: Build with Makefile
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - 'main'
+
+  workflow_dispatch:
+
+env:
+  # Release, Debug, RelWithDebInfo, etc.
+  BUILD_TYPE: Release
+  BUILD_NAME: rcrsf
+
+jobs:
+  build:
+    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
+    # You can convert this to a matrix build if you need cross-platform coverage.
+    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Install Arm GNU Toolchain (arm-none-eabi-gcc)
+      uses: carlosperate/arm-none-eabi-gcc-action@v1
+      with:
+        release: '13.3.Rel1'
+
+
+    - name: Build (Makefile)
+      working-directory: ${{github.workspace}}
+      run: make -f Makefile.user BUILD_TYPE=${{ env.BUILD_TYPE }} -j$(nproc)
+
+    - name: Prepare firmware artifacts
+      working-directory: ${{github.workspace}}/build/
+      run: |
+        arm-none-eabi-size ${{env.BUILD_NAME}}.elf
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{env.BUILD_NAME}}-${{ env.BUILD_TYPE }}
+        path: |
+          ${{github.workspace}}/build/${{env.BUILD_NAME}}.elf
+          ${{github.workspace}}/build/${{env.BUILD_NAME}}.map
+          ${{github.workspace}}/build/${{env.BUILD_NAME}}.hex
+        if-no-files-found: warn
+        retention-days: 14
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build/
+      run: ctest -C ${{env.BUILD_TYPE}}

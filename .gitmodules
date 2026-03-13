@@ -1,0 +1,3 @@
+[submodule "Libs/rcrsf"]
+	path = Libs/rcrsf
+	url = https://github.com/ZombieFly/rcrsf.git
