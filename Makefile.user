@@ -5,6 +5,10 @@
 # 1) Load the auto-generated project file first
 include Makefile
 
+BASE_C_SOURCES := $(C_SOURCES)
+BASE_ASM_SOURCES := $(ASM_SOURCES)
+BASE_ASMM_SOURCES := $(ASMM_SOURCES)
+
 # 2) Load user extension list (optional)
 USER_RESOURCE_FILE ?= user_sources.mk
 -include $(USER_RESOURCE_FILE)
@@ -17,13 +21,49 @@ ASMM_SOURCES += $(USER_ASMM_SOURCES)
 C_INCLUDES += $(addprefix -I,$(USER_INCLUDE_DIRS))
 C_DEFS += $(addprefix -D,$(USER_DEFS))
 
-# 4) Refresh vpath with appended sources
-vpath %.c $(sort $(dir $(C_SOURCES)))
-vpath %.s $(sort $(dir $(ASM_SOURCES)))
-vpath %.S $(sort $(dir $(ASMM_SOURCES)))
+# 4) Keep generated project objects unchanged and mirror only user-added
+# dependency sources under build/<source-relative-path>.o.
+BASE_OBJECTS := $(addprefix $(BUILD_DIR)/,$(notdir $(BASE_C_SOURCES:.c=.o)))
+BASE_OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(BASE_ASM_SOURCES:.s=.o)))
+BASE_OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(BASE_ASMM_SOURCES:.S=.o)))
+
+USER_OBJECTS := $(addprefix $(BUILD_DIR)/,$(USER_C_SOURCES:.c=.o))
+USER_OBJECTS += $(addprefix $(BUILD_DIR)/,$(USER_ASM_SOURCES:.s=.o))
+USER_OBJECTS += $(addprefix $(BUILD_DIR)/,$(USER_ASMM_SOURCES:.S=.o))
+
+OBJECTS := $(BASE_OBJECTS) $(USER_OBJECTS)
+USER_DEPENDENCY_FILES := $(USER_OBJECTS:.o=.d)
+
+ifeq ($(OS),Windows_NT)
+MKDIR_TREE = if not exist "$(subst /,\,$1)" mkdir "$(subst /,\,$1)"
+else
+MKDIR_TREE = mkdir -p "$1"
+endif
 
 # 5) Extend ELF prerequisites with appended OBJECTS (keep original recipe)
 $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile.user
+
+$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
+	@$(call MKDIR_TREE,$(@D))
+	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(@:.o=.lst) $< -o $@
+
+$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
+	@$(call MKDIR_TREE,$(@D))
+	$(AS) -c $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/%.o: %.S Makefile | $(BUILD_DIR)
+	@$(call MKDIR_TREE,$(@D))
+	$(AS) -c $(CFLAGS) $< -o $@
+
+-include $(USER_DEPENDENCY_FILES)
+
+.PHONY: clean
+clean:
+ifeq ($(OS),Windows_NT)
+	-if exist "$(subst /,\,$(BUILD_DIR))" rmdir /S /Q "$(subst /,\,$(BUILD_DIR))"
+else
+	-rm -fR $(BUILD_DIR)
+endif
 
 # 6) Convenience target to inspect effective user additions
 .PHONY: user-show
@@ -34,3 +74,5 @@ user-show:
 	@echo "USER_ASMM_SOURCES=$(USER_ASMM_SOURCES)"
 	@echo "USER_INCLUDE_DIRS=$(USER_INCLUDE_DIRS)"
 	@echo "USER_DEFS=$(USER_DEFS)"
+	@echo "USER_OBJECTS=$(USER_OBJECTS)"
+	@echo "OBJECTS=$(OBJECTS)"
