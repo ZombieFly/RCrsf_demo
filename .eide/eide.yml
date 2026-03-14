@@ -7,6 +7,8 @@ srcDirs:
   - Core
   - Drivers
   - Libs
+  - FATFS
+  - Middlewares
 virtualFolder:
   name: <virtual_root>
   files:
@@ -31,6 +33,9 @@ targets:
         - Drivers/CMSIS/Include
         - Libs/rcrsf
         - Libs/W25Q64
+        - FATFS/Target
+        - FATFS/App
+        - Middlewares/Third_Party/FatFs/src
       libList: []
     excludeList: []
     toolchain: GCC

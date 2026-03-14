@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "dma.h"
+#include "fatfs.h"
 #include "octospi.h"
 #include "usart.h"
 #include "gpio.h"
@@ -96,6 +97,7 @@ int main(void)
   MX_DMA_Init();
   MX_UART7_Init();
   MX_OCTOSPI2_Init();
+  MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
   OSPI_W25Qxx_Init();
   crsf_init();
