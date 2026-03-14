@@ -28,7 +28,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "usbd_core.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,12 +56,14 @@
 void SystemClock_Config(void);
 static void MPU_Config(void);
 /* USER CODE BEGIN PFP */
+static uint8_t APP_IsUsbConnectedAtStartup(void);
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+uint8_t ws2812_buffer = 0;
+extern USBD_HandleTypeDef hUsbDeviceHS;
 /* USER CODE END 0 */
 
 /**
@@ -103,6 +105,21 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_SPI6_Init();
   /* USER CODE BEGIN 2 */
+  if (APP_IsUsbConnectedAtStartup() == 0U)
+  {
+    (void)USBD_Stop(&hUsbDeviceHS);
+    (void)USBD_DeInit(&hUsbDeviceHS);
+  }
+  else
+  {
+    while (1)
+    {
+      WS2812_Ctrl(ws2812_buffer * 20, ws2812_buffer * 20, 0);
+      ws2812_buffer = !ws2812_buffer;
+      HAL_Delay(500);
+    }
+  }
+
   crsf_init();
   /* USER CODE END 2 */
 
@@ -113,6 +130,9 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    WS2812_Ctrl(0, ws2812_buffer * 40, 0);
+    ws2812_buffer = !ws2812_buffer;
+    HAL_Delay(1000);
   }
   /* USER CODE END 3 */
 }
@@ -180,6 +200,22 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+static uint8_t APP_IsUsbConnectedAtStartup(void)
+{
+  uint32_t start_tick;
+
+  start_tick = HAL_GetTick();
+  while ((HAL_GetTick() - start_tick) < 1500U)
+  {
+    if (hUsbDeviceHS.dev_state == USBD_STATE_CONFIGURED)
+    {
+      return 1U;
+    }
+    HAL_Delay(10);
+  }
+
+  return 0U;
+}
 
 /* USER CODE END 4 */
 
