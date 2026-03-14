@@ -50,6 +50,7 @@ extern "C" {
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
 #define DMA_RAM_SECTION ".RAM_D2_Section"
+#define RCRSF_USE_STOTRING
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
