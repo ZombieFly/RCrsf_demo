@@ -99,7 +99,6 @@ int main(void)
   MX_OCTOSPI2_Init();
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
-  OSPI_W25Qxx_Init();
   crsf_init();
   /* USER CODE END 2 */
 

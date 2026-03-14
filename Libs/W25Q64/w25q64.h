@@ -32,6 +32,7 @@
 #define W25Qxx_Status_REG1_WEL              0x02    // 读状态寄存器1的第1位（只读），WEL写使能标志位，该标志位为1时，代表可以进行写操作
 
 #define W25Qxx_PageSize                     256         // 页大小，256字节
+#define W25Qxx_EraseSectorSize              4096        // 最小擦除单位，4K字节
 #define W25Qxx_FlashSize                    0x800000    // W25Q64大小，8M字节
 #define W25Qxx_FLASH_ID                     0Xef4017    // W25Q64 JEDEC ID
 #define W25Qxx_ChipErase_TIMEOUT_MAX        100000U     // 超时等待时间，W25Q64整片擦除所需最大时间是100S

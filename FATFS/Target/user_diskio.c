@@ -38,10 +38,28 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
+#define USER_SECTOR_SIZE         _MIN_SS
+#define USER_FLASH_SIZE          W25Qxx_FlashSize
+#define USER_ERASE_BLOCK_SIZE    W25Qxx_EraseSectorSize
+#define USER_SECTOR_COUNT        (USER_FLASH_SIZE / USER_SECTOR_SIZE)
+#define USER_BLOCK_SECTOR_COUNT  (USER_ERASE_BLOCK_SIZE / USER_SECTOR_SIZE)
+
+#if (_MIN_SS > _MAX_SS)
+#error "FatFs sector size configuration is invalid"
+#endif
+
+#if ((W25Qxx_FlashSize % _MIN_SS) != 0)
+#error "W25Q64 size must be aligned to the logical FatFs sector size"
+#endif
+
+#if ((USER_ERASE_BLOCK_SIZE % _MIN_SS) != 0)
+#error "W25Q64 erase size must be an integer multiple of the logical FatFs sector size"
+#endif
 
 /* Private variables ---------------------------------------------------------*/
 /* Disk status */
 static volatile DSTATUS Stat = STA_NOINIT;
+static uint8_t erase_block_cache[USER_ERASE_BLOCK_SIZE];
 
 /* USER CODE END DECL */
 
@@ -81,7 +99,20 @@ DSTATUS USER_initialize (
 )
 {
   /* USER CODE BEGIN INIT */
-    Stat = STA_NOINIT;
+    if (pdrv != 0U)
+    {
+      return STA_NOINIT;
+    }
+
+    if (OSPI_W25Qxx_Init() == OSPI_W25Qxx_OK)
+    {
+      Stat &= (DSTATUS)~STA_NOINIT;
+    }
+    else
+    {
+      Stat |= STA_NOINIT;
+    }
+
     return Stat;
   /* USER CODE END INIT */
 }
@@ -96,7 +127,11 @@ DSTATUS USER_status (
 )
 {
   /* USER CODE BEGIN STATUS */
-    Stat = STA_NOINIT;
+    if (pdrv != 0U)
+    {
+      return STA_NOINIT;
+    }
+
     return Stat;
   /* USER CODE END STATUS */
 }
@@ -117,6 +152,32 @@ DRESULT USER_read (
 )
 {
   /* USER CODE BEGIN READ */
+    uint32_t read_addr;
+    uint32_t read_size;
+
+    if ((pdrv != 0U) || (count == 0U) || (buff == NULL))
+    {
+      return RES_PARERR;
+    }
+
+    if ((sector >= USER_SECTOR_COUNT) || ((sector + count) > USER_SECTOR_COUNT))
+    {
+      return RES_PARERR;
+    }
+
+    if ((Stat & STA_NOINIT) != 0U)
+    {
+      return RES_NOTRDY;
+    }
+
+    read_addr = (uint32_t)sector * USER_SECTOR_SIZE;
+    read_size = (uint32_t)count * USER_SECTOR_SIZE;
+
+    if (OSPI_W25Qxx_ReadBuffer(buff, read_addr, read_size) != OSPI_W25Qxx_OK)
+    {
+      return RES_ERROR;
+    }
+
     return RES_OK;
   /* USER CODE END READ */
 }
@@ -138,7 +199,71 @@ DRESULT USER_write (
 )
 {
   /* USER CODE BEGIN WRITE */
-  /* USER CODE HERE */
+    uint32_t processed_sectors;
+
+    if ((pdrv != 0U) || (count == 0U) || (buff == NULL))
+    {
+      return RES_PARERR;
+    }
+
+    if ((sector >= USER_SECTOR_COUNT) || ((sector + count) > USER_SECTOR_COUNT))
+    {
+      return RES_PARERR;
+    }
+
+    if ((Stat & STA_NOINIT) != 0U)
+    {
+      return RES_NOTRDY;
+    }
+
+    processed_sectors = 0U;
+    while (processed_sectors < count)
+    {
+      uint32_t current_lba;
+      uint32_t block_first_lba;
+      uint32_t block_end_lba;
+      uint32_t sectors_in_block;
+      uint32_t copy_index;
+      uint32_t block_base_addr;
+      uint32_t offset_in_block;
+
+      current_lba = (uint32_t)sector + processed_sectors;
+      block_first_lba = (current_lba / USER_BLOCK_SECTOR_COUNT) * USER_BLOCK_SECTOR_COUNT;
+      block_end_lba = block_first_lba + USER_BLOCK_SECTOR_COUNT;
+      sectors_in_block = (uint32_t)count - processed_sectors;
+      if ((current_lba + sectors_in_block) > block_end_lba)
+      {
+        sectors_in_block = block_end_lba - current_lba;
+      }
+
+      block_base_addr = block_first_lba * USER_SECTOR_SIZE;
+      offset_in_block = (current_lba - block_first_lba) * USER_SECTOR_SIZE;
+
+      if (OSPI_W25Qxx_ReadBuffer(erase_block_cache, block_base_addr, USER_ERASE_BLOCK_SIZE) != OSPI_W25Qxx_OK)
+      {
+        return RES_ERROR;
+      }
+
+      for (copy_index = 0U; copy_index < sectors_in_block; copy_index++)
+      {
+        memcpy(&erase_block_cache[offset_in_block + (copy_index * USER_SECTOR_SIZE)],
+               &buff[(processed_sectors + copy_index) * USER_SECTOR_SIZE],
+               USER_SECTOR_SIZE);
+      }
+
+      if (OSPI_W25Qxx_SectorErase(block_base_addr) != OSPI_W25Qxx_OK)
+      {
+        return RES_ERROR;
+      }
+
+      if (OSPI_W25Qxx_WriteBuffer(erase_block_cache, block_base_addr, USER_ERASE_BLOCK_SIZE) != OSPI_W25Qxx_OK)
+      {
+        return RES_ERROR;
+      }
+
+      processed_sectors += sectors_in_block;
+    }
+
     return RES_OK;
   /* USER CODE END WRITE */
 }
@@ -159,7 +284,53 @@ DRESULT USER_ioctl (
 )
 {
   /* USER CODE BEGIN IOCTL */
-    DRESULT res = RES_ERROR;
+    DRESULT res;
+
+    if (pdrv != 0U)
+    {
+      return RES_PARERR;
+    }
+
+    if ((Stat & STA_NOINIT) != 0U)
+    {
+      return RES_NOTRDY;
+    }
+
+    res = RES_OK;
+    switch (cmd)
+    {
+      case CTRL_SYNC:
+        break;
+
+      case GET_SECTOR_COUNT:
+        if (buff == NULL)
+        {
+          return RES_PARERR;
+        }
+        *(DWORD *)buff = (DWORD)USER_SECTOR_COUNT;
+        break;
+
+      case GET_SECTOR_SIZE:
+        if (buff == NULL)
+        {
+          return RES_PARERR;
+        }
+        *(WORD *)buff = (WORD)USER_SECTOR_SIZE;
+        break;
+
+      case GET_BLOCK_SIZE:
+        if (buff == NULL)
+        {
+          return RES_PARERR;
+        }
+        *(DWORD *)buff = (DWORD)USER_BLOCK_SECTOR_COUNT;
+        break;
+
+      default:
+        res = RES_PARERR;
+        break;
+    }
+
     return res;
   /* USER CODE END IOCTL */
 }
