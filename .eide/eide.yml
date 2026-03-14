@@ -9,6 +9,7 @@ srcDirs:
   - Libs
   - FATFS
   - Middlewares
+  - USB_DEVICE
 virtualFolder:
   name: <virtual_root>
   files:
@@ -36,6 +37,10 @@ targets:
         - FATFS/Target
         - FATFS/App
         - Middlewares/Third_Party/FatFs/src
+        - USB_DEVICE/App
+        - USB_DEVICE/Target
+        - Middlewares/ST/STM32_USB_Device_Library/Core/Inc
+        - Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Inc
       libList: []
     excludeList: []
     toolchain: GCC

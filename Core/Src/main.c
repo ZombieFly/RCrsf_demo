@@ -22,7 +22,7 @@
 #include "fatfs.h"
 #include "octospi.h"
 #include "usart.h"
-#include "usb_otg.h"
+#include "usb_device.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -99,7 +99,7 @@ int main(void)
   MX_UART7_Init();
   MX_OCTOSPI2_Init();
   MX_FATFS_Init();
-  MX_USB_OTG_HS_PCD_Init();
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
   crsf_init();
   /* USER CODE END 2 */
