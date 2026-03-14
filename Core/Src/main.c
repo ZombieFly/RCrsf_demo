@@ -97,6 +97,7 @@ int main(void)
   MX_UART7_Init();
   MX_OCTOSPI2_Init();
   /* USER CODE BEGIN 2 */
+  OSPI_W25Qxx_Init();
   crsf_init();
   /* USER CODE END 2 */
 

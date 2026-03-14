@@ -30,6 +30,7 @@ targets:
         - Drivers/CMSIS/Device/ST/STM32H7xx/Include
         - Drivers/CMSIS/Include
         - Libs/rcrsf
+        - Libs/W25Q64
       libList: []
     excludeList: []
     toolchain: GCC

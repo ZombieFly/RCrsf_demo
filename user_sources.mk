@@ -4,7 +4,9 @@
 # List dependency roots here. Each dependency is scanned recursively for sources
 # and header directories, so normal library changes do not require updating this file.
 USER_DEP_DIRS += \
-Libs/rcrsf
+Libs/rcrsf \
+Libs/W25Q64
+
 
 rwildcard = $(strip $(foreach entry,$(wildcard $1*),$(call rwildcard,$(entry)/,$2) $(filter $(subst *,%,$2),$(entry))))
 
