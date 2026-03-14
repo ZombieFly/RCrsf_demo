@@ -31,6 +31,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "ws2812.h"
 #include "w25q64.h"
 #include "rcrsf.h"
 /* USER CODE END Includes */
