@@ -42,6 +42,7 @@ targets:
         - Middlewares/ST/STM32_USB_Device_Library/Core/Inc
         - Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Inc
         - Libs/WS2812
+        - Libs/tomlc17
       libList: []
     excludeList: []
     toolchain: GCC
